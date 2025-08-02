@@ -28,14 +28,14 @@ export default function CharactersPanel({
   // Handle form submission (add or edit character)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingId) {
       onEdit(editingId, formData);
       setEditingId(null);
     } else {
       onAdd(formData);
     }
-    
+
     setFormData({ name: '', type: CharacterType.PLAYER, maxHp: 0, hp: 0, ac: 0 });
     setShowForm(false);
   };
@@ -91,7 +91,7 @@ export default function CharactersPanel({
               <X className="h-5 w-5" />
             </button>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -102,6 +102,18 @@ export default function CharactersPanel({
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Classe d'armure
+                </label>
+                <input
+                  type="number"
+                  value={formData.ac}
+                  onChange={(e) => setFormData(prev => ({ ...prev, ac: parseInt(e.target.value) || 0 }))}
                   className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
                   required
                 />
@@ -130,20 +142,8 @@ export default function CharactersPanel({
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Classe d'armure
-                </label>
-                <input
-                  type="number"
-                  value={formData.ac}
-                  onChange={(e) => setFormData(prev => ({ ...prev, ac: parseInt(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-                  required
-                />
-              </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -203,10 +203,9 @@ export default function CharactersPanel({
                       </div>
                       <div className="w-32 bg-gray-600 rounded-full h-2 mt-1">
                         <div
-                          className={`h-2 rounded-full ${
-                            character.hp <= 0 ? 'bg-red-500' :
-                            character.hp < character.maxHp / 2 ? 'bg-yellow-500' : 'bg-green-500'
-                          }`}
+                          className={`h-2 rounded-full ${character.hp <= 0 ? 'bg-red-500' :
+                              character.hp < character.maxHp / 2 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
                           style={{ width: `${Math.max(0, (character.hp / character.maxHp) * 100)}%` }}
                         ></div>
                       </div>

@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { Sword, Users, Skull, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sword, Users, Skull, Zap, Save } from 'lucide-react';
 import CharactersPanel from './components/CharactersPanel';
 import MonstresPanel from './components/MonstresPanel';
 import CombatPanel from './components/CombatPanel';
+import SaveManager from './components/SaveManager';
 import { Character } from './interfaces/Character.interface';
 import { Monster } from './interfaces/Monster.interface';
 import { CombatEntity, CombatEntityType } from './interfaces/CombatEntity.interface';
 
-type TabType = 'personnages' | 'monstres' | 'combat';
+type TabType = 'personnages' | 'monstres' | 'combat' | 'sauvegardes';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('personnages');
@@ -15,6 +16,35 @@ function App() {
   const [monsters, setMonsters] = useState<Monster[]>([]);
   const [activeCombat, setActiveCombat] = useState<CombatEntity[]>([]);
   const [currentTurn, setCurrentTurn] = useState(0);
+
+  // Load game state on app startup
+  useEffect(() => {
+    loadGameStateOnStartup();
+  }, []);
+
+  // Load the most recent save file on startup
+  const loadGameStateOnStartup = async () => {
+    try {
+      if (window.electronAPI) {
+        const result = await window.electronAPI.loadGameState();
+        if (result.success) {
+          setCharacters(result.data.characters || []);
+          setMonsters(result.data.monsters || []);
+          console.log('Game state loaded on startup:', result.filename);
+        } else {
+          console.log('No save file found, starting with empty state');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading game state on startup:', error);
+    }
+  };
+
+  // Load game state from save manager
+  const handleLoadGame = (loadedCharacters: Character[], loadedMonsters: Monster[]) => {
+    setCharacters(loadedCharacters);
+    setMonsters(loadedMonsters);
+  };
 
   // Add a new character to the list
   const addCharacter = (character: Omit<Character, 'id'>) => {
@@ -150,7 +180,8 @@ function App() {
   const tabs = [
     { id: 'personnages', label: 'Personnages', icon: Users },
     { id: 'monstres', label: 'Monstres', icon: Skull },
-    { id: 'combat', label: 'Combat', icon: Sword }
+    { id: 'combat', label: 'Combat', icon: Sword },
+    { id: 'sauvegardes', label: 'Sauvegardes', icon: Save }
   ];
 
   return (
@@ -227,6 +258,14 @@ function App() {
             onNextTurn={nextTurn}
             onPreviousTurn={previousTurn}
             combatEnded={combatEnded}
+          />
+        )}
+
+        {activeTab === 'sauvegardes' && (
+          <SaveManager
+            characters={characters}
+            monsters={monsters}
+            onLoadGame={handleLoadGame}
           />
         )}
       </main>

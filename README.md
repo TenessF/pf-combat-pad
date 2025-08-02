@@ -29,6 +29,14 @@ Une application Electron moderne pour aider les maîtres de jeu (MJ) à gérer l
 - Fin automatique du combat quand tous les monstres sont vaincus
 - Sauvegarde automatique des PV des personnages
 
+### 💾 Système de Sauvegarde
+- Sauvegarde automatique au démarrage de l'application
+- Gestion complète des sauvegardes (créer, charger, supprimer)
+- Interface dédiée pour la gestion des fichiers de sauvegarde
+- Horodatage automatique des sauvegardes
+- Chargement de la sauvegarde la plus récente au démarrage
+- Sauvegarde uniquement des personnages et monstres (pas des combats en cours)
+
 ## 🚀 Installation
 
 ### Prérequis
@@ -73,11 +81,15 @@ combat-pad/
 │   ├── components/             # Composants React
 │   │   ├── CharactersPanel.tsx # Gestion des personnages
 │   │   ├── MonstresPanel.tsx  # Gestion des monstres
-│   │   └── CombatPanel.tsx    # Interface de combat
+│   │   ├── CombatPanel.tsx    # Interface de combat
+│   │   └── SaveManager.tsx    # Gestion des sauvegardes
 │   ├── interfaces/             # Définitions TypeScript
 │   │   ├── Character.interface.tsx
 │   │   ├── Monster.interface.tsx
-│   │   └── CombatEntity.interface.tsx
+│   │   ├── CombatEntity.interface.tsx
+│   │   └── SaveFile.interface.tsx
+│   ├── types/                  # Types globaux
+│   │   └── electron.d.ts      # Types pour les APIs Electron
 │   ├── App.tsx                # Composant principal
 │   ├── main.tsx               # Point d'entrée React
 │   └── index.css              # Styles globaux
@@ -129,15 +141,28 @@ combat-pad/
 - **Fin de combat** : Le combat se termine automatiquement quand tous les monstres sont à 0 PV
 - **Sauvegarde** : Les PV des personnages sont automatiquement sauvegardés
 
+### 5. Gestion des Sauvegardes
+1. Allez dans l'onglet "Sauvegardes"
+2. **Sauvegarde manuelle** : Cliquez sur "Sauvegarder" pour créer une sauvegarde de l'état actuel
+3. **Chargement** : 
+   - "Charger le plus récent" pour charger la dernière sauvegarde
+   - Cliquez sur l'icône de téléchargement à côté d'une sauvegarde spécifique
+4. **Gestion des fichiers** :
+   - Voir toutes les sauvegardes disponibles avec date et taille
+   - Supprimer une sauvegarde avec l'icône poubelle
+   - Confirmation de suppression pour éviter les erreurs
+5. **Chargement automatique** : L'application charge automatiquement la sauvegarde la plus récente au démarrage
+
 ## 🎨 Interface
 
 L'application utilise un design moderne avec :
 - **Thème sombre** optimisé pour les sessions de jeu
 - **Interface responsive** qui s'adapte à différentes tailles d'écran
 - **Indicateurs visuels** pour les PV (vert, jaune, rouge selon les dégâts)
-- **Navigation intuitive** entre les trois onglets principaux
+- **Navigation intuitive** entre les quatre onglets principaux
 - **Modales** pour la saisie des initiatives
 - **Messages de victoire** quand le combat se termine
+- **Interface de sauvegarde** avec gestion complète des fichiers
 
 ## 🔧 Configuration
 
@@ -177,6 +202,14 @@ L'application peut être personnalisée en modifiant :
 - **Indication du tour actuel** avec mise en évidence
 - **Tableau complet** avec toutes les informations
 - **Boutons d'action** pour chaque entité
+
+### Système de Sauvegarde
+- **Chargement automatique** au démarrage de l'application
+- **Gestion des fichiers** avec interface dédiée
+- **Horodatage** automatique des sauvegardes
+- **Chargement intelligent** de la sauvegarde la plus récente
+- **Sécurité** : Sauvegarde uniquement des données persistantes (personnages/monstres)
+- **Gestion d'erreurs** avec messages utilisateur
 
 ## 🤝 Contribution
 
