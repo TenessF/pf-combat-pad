@@ -7,6 +7,7 @@ import SaveManager from './components/SaveManager';
 import { Character } from './interfaces/Character.interface';
 import { Monster } from './interfaces/Monster.interface';
 import { CombatEntity, CombatEntityType } from './interfaces/CombatEntity.interface';
+import { Effect } from './interfaces/Effect.interface';
 
 type TabType = 'personnages' | 'monstres' | 'combat' | 'sauvegardes';
 
@@ -96,7 +97,8 @@ function App() {
           ...character,
           initiative: characterInitiatives?.[id] || 0, // Use provided initiative or default to 0
           type: CombatEntityType.CHARACTER,
-          instanceId: undefined
+          instanceId: undefined,
+          effects: []
         });
       }
     });
@@ -112,7 +114,8 @@ function App() {
             hp: monster.maxHp,
             initiative: monsterInitiative, // All instances share the same initiative
             type: CombatEntityType.MONSTER,
-            instanceId: `${id}-${i}`
+            instanceId: `${id}-${i}`,
+            effects: []
           });
         }
       }
@@ -167,9 +170,57 @@ function App() {
     }));
   };
 
+  // Add effect to combat entity
+  const addEffect = (id: string, instanceId: string | undefined, effect: Omit<Effect, 'id'>) => {
+    setActiveCombat(prev => prev.map(entite => {
+      if (entite.id === id && entite.instanceId === instanceId) {
+        const newEffect: Effect = {
+          ...effect,
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+        };
+        return { ...entite, effects: [...entite.effects, newEffect] };
+      }
+      return entite;
+    }));
+  };
+
+  // Remove effect from combat entity
+  const removeEffect = (id: string, instanceId: string | undefined, effectId: string) => {
+    setActiveCombat(prev => prev.map(entite => {
+      if (entite.id === id && entite.instanceId === instanceId) {
+        return { ...entite, effects: entite.effects.filter(e => e.id !== effectId) };
+      }
+      return entite;
+    }));
+  };
+
+  // Decrement effects duration and remove expired ones at the start of a turn
+  const processEffectsAtTurnStart = (entityId: string, entityInstanceId: string | undefined) => {
+    setActiveCombat(prev => prev.map(entite => {
+      if (entite.id === entityId && entite.instanceId === entityInstanceId) {
+        // Decrement duration and remove expired effects
+        const updatedEffects = entite.effects
+          .map(effect => ({ ...effect, duration: effect.duration - 1 }))
+          .filter(effect => effect.duration > 0);
+        return { ...entite, effects: updatedEffects };
+      }
+      return entite;
+    }));
+  };
+
   // Move to next turn
   const nextTurn = () => {
-    setCurrentTurn(prev => (prev + 1) % activeCombat.length);
+    const sortedEntities = [...activeCombat].sort((a, b) => b.initiative - a.initiative);
+    const nextIndex = (currentTurn + 1) % activeCombat.length;
+    const nextEntity = sortedEntities[nextIndex];
+    
+    // Move to next turn
+    setCurrentTurn(nextIndex);
+    
+    // Process effects for the new entity at the start of its turn
+    if (nextEntity) {
+      processEffectsAtTurnStart(nextEntity.id, nextEntity.instanceId);
+    }
   };
 
   // Move to previous turn
@@ -258,6 +309,8 @@ function App() {
             onNextTurn={nextTurn}
             onPreviousTurn={previousTurn}
             combatEnded={combatEnded}
+            onAddEffect={addEffect}
+            onRemoveEffect={removeEffect}
           />
         )}
 

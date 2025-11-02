@@ -1,3 +1,5 @@
+import { Effect } from './Effect.interface';
+
 export enum CombatEntityType {
     CHARACTER = 'CHARACTER',
     MONSTER = 'MONSTER',
@@ -12,4 +14,5 @@ export interface CombatEntity {
     hp: number;
     maxHp: number;
     ac: number;
+    effects: Effect[];
 }

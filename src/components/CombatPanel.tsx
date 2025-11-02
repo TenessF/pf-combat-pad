@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Play, Square, ChevronLeft, ChevronRight, Plus, Minus, X } from 'lucide-react';
+import { Play, Square, ChevronLeft, ChevronRight, Plus, Minus, X, Zap } from 'lucide-react';
 import { CombatEntity, CombatEntityType } from '../interfaces/CombatEntity.interface';
 import { Character } from '../interfaces/Character.interface';
 import { Monster } from '../interfaces/Monster.interface';
+import { Effect } from '../interfaces/Effect.interface';
 import React from 'react';
 
 interface CombatPanelProps {
@@ -16,6 +17,8 @@ interface CombatPanelProps {
   onNextTurn: () => void;
   onPreviousTurn: () => void;
   combatEnded: boolean;
+  onAddEffect: (id: string, instanceId: string | undefined, effect: Omit<Effect, 'id'>) => void;
+  onRemoveEffect: (id: string, instanceId: string | undefined, effectId: string) => void;
 }
 
 export default function CombatPanel({
@@ -28,10 +31,15 @@ export default function CombatPanel({
   onModifyHp,
   onNextTurn,
   onPreviousTurn,
-  combatEnded
+  combatEnded,
+  onAddEffect,
+  onRemoveEffect
 }: CombatPanelProps) {
   const [showSetup, setShowSetup] = useState(true);
   const [showInitiativeModal, setShowInitiativeModal] = useState(false);
+  const [showEffectModal, setShowEffectModal] = useState(false);
+  const [selectedEntityForEffect, setSelectedEntityForEffect] = useState<{ id: string; instanceId: string | undefined } | null>(null);
+  const [effectFormData, setEffectFormData] = useState({ name: '', duration: 1 });
   const [charactersSelected, setCharactersSelected] = useState<string[]>([]);
   const [monstersSelected, setMonstersSelected] = useState<{ id: string, nombre: number }[]>([]);
   const [characterInitiatives, setCharacterInitiatives] = useState<{ [key: string]: number }>({});
@@ -168,8 +176,111 @@ export default function CombatPanel({
     }
   };
 
+  // Handle add effect button click
+  const handleAddEffectClick = (entityId: string, instanceId: string | undefined) => {
+    setSelectedEntityForEffect({ id: entityId, instanceId });
+    setEffectFormData({ name: '', duration: 1 });
+    setShowEffectModal(true);
+  };
+
+  // Handle effect form submission
+  const handleAddEffect = () => {
+    if (!selectedEntityForEffect || !effectFormData.name.trim() || effectFormData.duration < 1) {
+      return;
+    }
+    onAddEffect(selectedEntityForEffect.id, selectedEntityForEffect.instanceId, {
+      name: effectFormData.name.trim(),
+      duration: effectFormData.duration
+    });
+    setShowEffectModal(false);
+    setSelectedEntityForEffect(null);
+    setEffectFormData({ name: '', duration: 1 });
+  };
+
+  // Handle cancel effect modal
+  const handleCancelEffectModal = () => {
+    setShowEffectModal(false);
+    setSelectedEntityForEffect(null);
+    setEffectFormData({ name: '', duration: 1 });
+  };
+
   const sortedEntities = [...activeCombat].sort((a, b) => b.initiative - a.initiative);
   const currentEntity = sortedEntities[currentTurn];
+
+  // Effect modal
+  if (showEffectModal && selectedEntityForEffect) {
+    const entityForEffect = sortedEntities.find(e => e.id === selectedEntityForEffect.id && e.instanceId === selectedEntityForEffect.instanceId);
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700 max-w-md w-full mx-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Ajouter un effet</h3>
+            <button
+              onClick={handleCancelEffectModal}
+              className="text-gray-400 hover:text-gray-200"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-gray-300 text-sm mb-2">
+                Cible : <span className="font-medium text-white">{entityForEffect?.name}{entityForEffect?.instanceId && ` (${entityForEffect.instanceId.split('-')[1]})`}</span>
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Nom de l'effet
+              </label>
+              <input
+                type="text"
+                value={effectFormData.name}
+                onChange={(e) => setEffectFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
+                placeholder="Ex: Haste, Bless, etc."
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Durée (en tours)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={effectFormData.duration}
+                onChange={(e) => setEffectFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 1 }))}
+                className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                La durée diminue de 1 à chaque début de tour de cette entité. L'effet est automatiquement supprimé quand la durée atteint 0.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={handleCancelEffectModal}
+              className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleAddEffect}
+              disabled={!effectFormData.name.trim() || effectFormData.duration < 1}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Ajouter l'effet</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Initiative modal
   if (showInitiativeModal) {
@@ -424,6 +535,41 @@ export default function CombatPanel({
                 Initiative: {currentEntity.initiative} |
                 CA: {currentEntity.ac}
               </p>
+              {/* Effects display */}
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-300">Effets actifs :</span>
+                  <button
+                    onClick={() => handleAddEffectClick(currentEntity.id, currentEntity.instanceId)}
+                    className="flex items-center space-x-1 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Ajouter</span>
+                  </button>
+                </div>
+                {currentEntity.effects && currentEntity.effects.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {currentEntity.effects.map((effect) => (
+                      <div
+                        key={effect.id}
+                        className="flex items-center space-x-2 bg-purple-900/30 border border-purple-700 rounded px-2 py-1"
+                      >
+                        <span className="text-sm text-white">{effect.name}</span>
+                        <span className="text-xs text-purple-300">({effect.duration} tour{effect.duration > 1 ? 's' : ''})</span>
+                        <button
+                          onClick={() => onRemoveEffect(currentEntity.id, currentEntity.instanceId, effect.id)}
+                          className="text-purple-300 hover:text-red-400 transition-colors"
+                          title="Supprimer l'effet"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Aucun effet actif</p>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-center">
@@ -501,6 +647,9 @@ export default function CombatPanel({
                   CA
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Effets
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -546,6 +695,37 @@ export default function CombatPanel({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                     {entity.ac}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-start gap-2 flex-wrap max-w-xs">
+                      {entity.effects && entity.effects.length > 0 ? (
+                        entity.effects.map((effect) => (
+                          <div
+                            key={effect.id}
+                            className="flex items-center space-x-1 bg-purple-900/30 border border-purple-700 rounded px-2 py-1"
+                          >
+                            <span className="text-xs text-white">{effect.name}</span>
+                            <span className="text-xs text-purple-300">({effect.duration})</span>
+                            <button
+                              onClick={() => onRemoveEffect(entity.id, entity.instanceId, effect.id)}
+                              className="text-purple-300 hover:text-red-400 transition-colors ml-1"
+                              title="Supprimer l'effet"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                          <span className="text-xs text-gray-500">Aucun</span>
+                        )}
+                      <button
+                        onClick={() => handleAddEffectClick(entity.id, entity.instanceId)}
+                        className="text-purple-400 hover:text-purple-300 transition-colors"
+                        title="Ajouter un effet"
+                      >
+                        <Zap className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
